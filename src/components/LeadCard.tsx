@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +21,7 @@ const LeadCard = ({ lead, onDragStart }: LeadCardProps) => {
     month: 'short',
     day: 'numeric',
   });
-  
+
   const handleActionClick = () => {
     navigate(`/project/${lead.id}`);
   };
@@ -30,6 +29,11 @@ const LeadCard = ({ lead, onDragStart }: LeadCardProps) => {
   const handleMessageClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     navigate(`/project/${lead.id}/messages`);
+  };
+
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/project/${lead.id}`);
   };
   
   return (
@@ -40,8 +44,16 @@ const LeadCard = ({ lead, onDragStart }: LeadCardProps) => {
     >
       <CardHeader className="pb-2 flex flex-row justify-between items-center">
         <div>
-          <h3 className="font-medium text-sm truncate max-w-[170px]">{lead.name}</h3>
-          <p className="text-xs text-muted-foreground truncate max-w-[200px]">
+          <h3 
+            className="font-medium text-sm truncate max-w-[170px] hover:text-primary cursor-pointer"
+            onClick={handleEditClick}
+          >
+            {lead.name}
+          </h3>
+          <p 
+            className="text-xs text-muted-foreground truncate max-w-[200px] hover:text-primary cursor-pointer"
+            onClick={handleEditClick}
+          >
             {lead.propertyAddresses && lead.propertyAddresses.length > 0 
               ? lead.propertyAddresses[0].address 
               : 'No address'}
