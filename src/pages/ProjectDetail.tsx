@@ -32,6 +32,11 @@ const ProjectDetail = () => {
     year: 'numeric'
   });
 
+  // Safely get property addresses
+  const propertyAddressText = lead.propertyAddresses && lead.propertyAddresses.length > 0 
+    ? lead.propertyAddresses.map(pa => pa.address).join(', ')
+    : 'No address';
+
   return (
     <div className="container py-4 max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -63,9 +68,7 @@ const ProjectDetail = () => {
           <CardHeader className="text-sm font-medium text-gray-500">Opportunity</CardHeader>
           <CardContent className="pt-0">
             <div className="flex flex-col space-y-1">
-              <p className="text-base font-medium">
-                {lead.propertyAddresses.map(pa => pa.address).join(', ')}
-              </p>
+              <p className="text-base font-medium">{propertyAddressText}</p>
               <div className="flex items-center space-x-2">
                 <span className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-xs">
                   {lead.assignee.substring(0, 2).toUpperCase()}
