@@ -109,7 +109,7 @@ export const useLeadsStore = create<LeadsState>()(
 
         getUnreadMessageCount: (leadId) => {
           const lead = get().leads.find(l => l.id === leadId);
-          if (!lead) return 0;
+          if (!lead || !lead.messages) return 0;
           return lead.messages.filter(m => !m.read).length;
         }
       }),
