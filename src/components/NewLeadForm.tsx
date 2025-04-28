@@ -9,7 +9,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useLeadsStore } from '@/store/leadsStore';
-import { type Urgency, type ActionType, type Status } from '@/types/leads';
+import { type Urgency, type ActionType, type Status, type ReferrerSource } from '@/types/leads';
+import { Plus, X } from "lucide-react";
 
 interface NewLeadFormProps {
   open: boolean;
@@ -31,6 +32,17 @@ const actionOptions: ActionType[] = [
   "Finalise opportunity"
 ];
 
+const referrerOptions: ReferrerSource[] = [
+  "Website",
+  "Referral",
+  "Walk-in",
+  "Cold Call",
+  "Social Media",
+  "Marketing Campaign",
+  "Online Listing",
+  "Other"
+];
+
 const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
   const { toast } = useToast();
   const addLead = useLeadsStore(state => state.addLead);
@@ -46,30 +58,44 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
     notes: '',
     email: '',
     phone: '',
+    referrerSource: 'Website' as ReferrerSource,
   });
+
+  const [additionalAddresses, setAdditionalAddresses] = useState<string[]>([]);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleAddAddress = () => {
+    setAdditionalAddresses(prev => [...prev, '']);
+  };
+
+  const handleChangeAdditionalAddress = (index: number, value: string) => {
+    setAdditionalAddresses(prev => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
+
+  const handleRemoveAddress = (index: number) => {
+    setAdditionalAddresses(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validation
-    if (!formData.name || !formData.propertyAddress || !formData.assignee || !formData.closeDate) {
-      toast({
-        title: "Missing fields",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
     addLead(formData);
+    
+    // Add additional addresses if any
+    // We'll handle this after lead creation in the store itself
+    
     toast({
       title: "Lead created",
       description: "New lead has been created successfully",
     });
+    
     resetForm();
     onClose();
   };
@@ -86,7 +112,9 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
       notes: '',
       email: '',
       phone: '',
+      referrerSource: 'Website' as ReferrerSource,
     });
+    setAdditionalAddresses([]);
   };
 
   return (
@@ -98,7 +126,7 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Lead Name*</Label>
+            <Label htmlFor="name">Lead Name</Label>
             <Input 
               id="name" 
               value={formData.name}
@@ -108,7 +136,7 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="propertyAddress">Property Address*</Label>
+            <Label htmlFor="propertyAddress">Property Address</Label>
             <Input 
               id="propertyAddress" 
               value={formData.propertyAddress}
@@ -116,6 +144,34 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
               placeholder="Enter property address"
             />
           </div>
+          
+          {additionalAddresses.map((address, index) => (
+            <div key={index} className="flex space-x-2">
+              <Input
+                value={address}
+                onChange={(e) => handleChangeAdditionalAddress(index, e.target.value)}
+                placeholder="Enter additional property address"
+              />
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="icon"
+                onClick={() => handleRemoveAddress(index)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+          
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full flex items-center justify-center"
+            onClick={handleAddAddress}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add Another Property Address
+          </Button>
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -164,6 +220,23 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
           </div>
           
           <div className="space-y-2">
+            <Label htmlFor="referrerSource">Referrer Source</Label>
+            <Select 
+              value={formData.referrerSource}
+              onValueChange={(value) => handleChange('referrerSource', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select referrer source" />
+              </SelectTrigger>
+              <SelectContent>
+                {referrerOptions.map(source => (
+                  <SelectItem key={source} value={source}>{source}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
             <Label htmlFor="nextAction">Next Action</Label>
             <Select 
               value={formData.nextAction}
@@ -181,7 +254,7 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="assignee">Assignee*</Label>
+            <Label htmlFor="assignee">Assignee</Label>
             <Input 
               id="assignee" 
               value={formData.assignee}
@@ -191,7 +264,7 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="closeDate">Close Date*</Label>
+            <Label htmlFor="closeDate">Close Date</Label>
             <Input 
               id="closeDate" 
               type="date" 

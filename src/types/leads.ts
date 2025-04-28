@@ -25,10 +25,33 @@ export type ActionType =
   | "Verify property ownership and investor IDs"
   | "Finalise opportunity";
 
+export type ReferrerSource =
+  | "Website"
+  | "Referral"
+  | "Walk-in"
+  | "Cold Call"
+  | "Social Media"
+  | "Marketing Campaign"
+  | "Online Listing"
+  | "Other";
+
+export interface PropertyAddress {
+  id: string;
+  address: string;
+}
+
+export interface Message {
+  id: string;
+  content: string;
+  sender: string;
+  timestamp: string;
+  read: boolean;
+}
+
 export interface Lead {
   id: string;
   name: string;
-  propertyAddress: string;
+  propertyAddresses: PropertyAddress[];
   urgency: Urgency;
   nextAction: ActionType;
   assignee: string;
@@ -38,4 +61,7 @@ export interface Lead {
   email?: string;
   phone?: string;
   createdAt: string;
+  referrerSource?: ReferrerSource;
+  messages: Message[];
+  projectId?: string;
 }
