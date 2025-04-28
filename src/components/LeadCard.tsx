@@ -42,8 +42,10 @@ const LeadCard = ({ lead, onDragStart }: LeadCardProps) => {
         <div>
           <h3 className="font-medium text-sm truncate max-w-[170px]">{lead.name}</h3>
           <p className="text-xs text-muted-foreground truncate max-w-[200px]">
-            {lead.propertyAddresses.length > 0 ? lead.propertyAddresses[0].address : 'No address'}
-            {lead.propertyAddresses.length > 1 && ` +${lead.propertyAddresses.length - 1} more`}
+            {lead.propertyAddresses && lead.propertyAddresses.length > 0 
+              ? lead.propertyAddresses[0].address 
+              : 'No address'}
+            {lead.propertyAddresses && lead.propertyAddresses.length > 1 && ` +${lead.propertyAddresses.length - 1} more`}
           </p>
         </div>
         <UrgencyBadge urgency={lead.urgency} />
