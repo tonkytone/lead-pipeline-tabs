@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { v4 as uuidv4 } from 'uuid';
@@ -87,7 +86,8 @@ export const useLeadsStore = create<LeadsState>()(
                   messages: [...lead.messages, { 
                     ...message, 
                     id: uuidv4(), 
-                    timestamp: new Date().toISOString() 
+                    timestamp: new Date().toISOString(),
+                    read: false // Initialize as unread
                   }]
                 } 
               : lead
