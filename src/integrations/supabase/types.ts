@@ -9,7 +9,118 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      leads: {
+        Row: {
+          assignee: string | null
+          close_date: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          next_action: string
+          notes: string | null
+          phone: string | null
+          project_id: string
+          referrer_source: string | null
+          status: string
+          urgency: string
+          user_id: string
+        }
+        Insert: {
+          assignee?: string | null
+          close_date?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          next_action: string
+          notes?: string | null
+          phone?: string | null
+          project_id: string
+          referrer_source?: string | null
+          status: string
+          urgency: string
+          user_id: string
+        }
+        Update: {
+          assignee?: string | null
+          close_date?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          next_action?: string
+          notes?: string | null
+          phone?: string | null
+          project_id?: string
+          referrer_source?: string | null
+          status?: string
+          urgency?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          id: string
+          lead_id: string
+          read: boolean
+          sender: string
+          timestamp: string
+        }
+        Insert: {
+          content: string
+          id?: string
+          lead_id: string
+          read?: boolean
+          sender: string
+          timestamp?: string
+        }
+        Update: {
+          content?: string
+          id?: string
+          lead_id?: string
+          read?: boolean
+          sender?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_addresses: {
+        Row: {
+          address: string
+          id: string
+          lead_id: string
+        }
+        Insert: {
+          address: string
+          id?: string
+          lead_id: string
+        }
+        Update: {
+          address?: string
+          id?: string
+          lead_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_addresses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
