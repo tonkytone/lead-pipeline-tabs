@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import { useLeadsStore } from '@/store/leadsStore';
-import { type Urgency, type ActionType, type Status, type ReferrerSource } from '@/types/leads';
-import { Plus, X } from "lucide-react";
+import { type Lead, type Urgency, type ActionType, type Status, type ReferrerSource } from '@/types/leads';
+import { Plus, X } from 'lucide-react';
 
-interface NewLeadFormProps {
+interface LeadModalProps {
+  lead: Lead | null;
   open: boolean;
   onClose: () => void;
 }
@@ -43,32 +44,28 @@ const referrerOptions: ReferrerSource[] = [
   "Social Media",
   "Marketing Campaign",
   "Online Listing",
-  "Other"
+  "Other",
+  "Ailo"
 ];
 
-const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
+const LeadModal: React.FC<LeadModalProps> = ({ lead, open, onClose }) => {
   const { toast } = useToast();
-  const addLead = useLeadsStore(state => state.addLead);
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    propertyAddress: '',
-    urgency: 'warm' as Urgency,
-    nextAction: actionOptions[0],
-    assignee: '',
-    closeDate: '',
-    status: 'New' as Status,
-    notes: '',
-    email: '',
-    phone: '',
-    referrerSource: 'Website' as ReferrerSource,
-  });
-
+  const { updateLead } = useLeadsStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<Partial<Lead> | null>(null);
   const [additionalAddresses, setAdditionalAddresses] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (lead) {
+      setFormData(lead);
+      setAdditionalAddresses([]);
+    }
+  }, [lead]);
+
+  if (!lead || !formData) return null;
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => prev ? { ...prev, [field]: value } : null);
   };
 
   const handleAddAddress = () => {
@@ -87,116 +84,120 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
     setAdditionalAddresses(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.propertyAddress) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a lead name and property address.",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Add the primary lead with first property address
-      await addLead(formData);
-      
-      // Reset form
-      resetForm();
-      onClose();
+    if (formData) {
+      updateLead(lead.id, formData);
       
       toast({
-        title: "Lead created",
-        description: "New lead has been created successfully",
+        title: "Lead updated",
+        description: "Lead has been updated successfully",
       });
-    } catch (error) {
-      console.error("Failed to create lead:", error);
-    } finally {
-      setIsSubmitting(false);
+      
+      setIsEditing(false);
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: '',
-      propertyAddress: '',
-      urgency: 'warm' as Urgency,
-      nextAction: actionOptions[0],
-      assignee: '',
-      closeDate: '',
-      status: 'New' as Status,
-      notes: '',
-      email: '',
-      phone: '',
-      referrerSource: 'Website' as ReferrerSource,
-    });
+  const handleCancel = () => {
+    setFormData(lead);
     setAdditionalAddresses([]);
+    setIsEditing(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create New Lead</DialogTitle>
-          <DialogDescription>
-            Enter the details for the new lead. Required fields are marked with an asterisk (*).
-          </DialogDescription>
+          <DialogTitle className="flex justify-between items-center">
+            Lead Details
+            {!isEditing ? (
+              <Button variant="outline" onClick={() => setIsEditing(true)}>
+                Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleCancel}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSave}>
+                  Save
+                </Button>
+              </div>
+            )}
+          </DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSave} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Lead Name *</Label>
+            <Label htmlFor="name">Lead Name</Label>
             <Input 
               id="name" 
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               placeholder="Enter lead name"
-              required
+              disabled={!isEditing}
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="propertyAddress">Property Address *</Label>
+            <Label htmlFor="propertyAddress">Property Address</Label>
             <Input 
               id="propertyAddress" 
-              value={formData.propertyAddress}
-              onChange={(e) => handleChange('propertyAddress', e.target.value)}
+              value={formData.propertyAddresses?.[0]?.address || ''}
+              onChange={(e) => {
+                const updatedAddresses = formData.propertyAddresses ? [...formData.propertyAddresses] : [];
+                if (updatedAddresses.length > 0) {
+                  updatedAddresses[0] = { ...updatedAddresses[0], address: e.target.value };
+                } else {
+                  updatedAddresses.push({ id: Date.now().toString(), address: e.target.value });
+                }
+                setFormData(prev => prev ? { ...prev, propertyAddresses: updatedAddresses } : null);
+              }}
               placeholder="Enter property address"
-              required
+              disabled={!isEditing}
             />
           </div>
           
-          {additionalAddresses.map((address, index) => (
-            <div key={index} className="flex space-x-2">
+          {formData.propertyAddresses?.slice(1).map((address, index) => (
+            <div key={address.id} className="flex space-x-2">
               <Input
-                value={address}
-                onChange={(e) => handleChangeAdditionalAddress(index, e.target.value)}
+                value={address.address}
+                onChange={(e) => {
+                  const updated = [...formData.propertyAddresses];
+                  updated[index + 1] = { ...address, address: e.target.value };
+                  setFormData(prev => prev ? { ...prev, propertyAddresses: updated } : null);
+                }}
                 placeholder="Enter additional property address"
+                disabled={!isEditing}
               />
-              <Button 
-                type="button" 
-                variant="outline" 
-                size="icon"
-                onClick={() => handleRemoveAddress(index)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              {isEditing && (
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="icon"
+                  onClick={() => {
+                    const updated = formData.propertyAddresses.filter((_, i) => i !== index + 1);
+                    setFormData(prev => prev ? { ...prev, propertyAddresses: updated } : null);
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           ))}
           
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="w-full flex items-center justify-center"
-            onClick={handleAddAddress}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Add Another Property Address
-          </Button>
+          {isEditing && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full flex items-center justify-center"
+              onClick={() => setFormData(prev => prev ? { ...prev, propertyAddresses: [...prev.propertyAddresses, { id: Date.now().toString(), address: '' }] } : null)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Another Property Address
+            </Button>
+          )}
           
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -204,9 +205,10 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
               <Input 
                 id="email" 
                 type="email"
-                value={formData.email}
+                value={formData.email || ''}
                 onChange={(e) => handleChange('email', e.target.value)}
                 placeholder="Enter email"
+                disabled={!isEditing}
               />
             </div>
             
@@ -214,9 +216,10 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
               <Label htmlFor="phone">Phone</Label>
               <Input 
                 id="phone" 
-                value={formData.phone}
+                value={formData.phone || ''}
                 onChange={(e) => handleChange('phone', e.target.value)}
                 placeholder="Enter phone"
+                disabled={!isEditing}
               />
             </div>
           </div>
@@ -224,10 +227,10 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
           <div className="space-y-2">
             <Label>Urgency</Label>
             <RadioGroup 
-              defaultValue="warm"
               value={formData.urgency}
               onValueChange={(value) => handleChange('urgency', value)}
               className="flex space-x-4"
+              disabled={!isEditing}
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="hot" id="hot" />
@@ -247,8 +250,9 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
           <div className="space-y-2">
             <Label htmlFor="referrerSource">Referrer Source</Label>
             <Select 
-              value={formData.referrerSource}
+              value={formData.referrerSource || ''}
               onValueChange={(value) => handleChange('referrerSource', value)}
+              disabled={!isEditing}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select referrer source" />
@@ -266,6 +270,7 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
             <Select 
               value={formData.nextAction}
               onValueChange={(value) => handleChange('nextAction', value)}
+              disabled={!isEditing}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select next action" />
@@ -277,49 +282,61 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
               </SelectContent>
             </Select>
           </div>
-          
+
+          <div className="space-y-2">
+            <Label htmlFor="status">Status</Label>
+            <Select 
+              value={formData.status}
+              onValueChange={(value) => handleChange('status', value)}
+              disabled={!isEditing}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                {['New', 'Qualifying', 'Engaged', 'Presented', 'Signed', 'Won', 'To Nurture', 'Lost'].map(status => (
+                  <SelectItem key={status} value={status}>{status}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="assignee">Assignee</Label>
             <Input 
               id="assignee" 
               value={formData.assignee}
               onChange={(e) => handleChange('assignee', e.target.value)}
-              placeholder="Enter assignee name"
+              placeholder="Enter assignee"
+              disabled={!isEditing}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="closeDate">Close Date</Label>
             <Input 
               id="closeDate" 
-              type="date" 
-              value={formData.closeDate}
-              onChange={(e) => handleChange('closeDate', e.target.value)}
+              type="date"
+              value={formData.closeDate.split('T')[0]}
+              onChange={(e) => handleChange('closeDate', new Date(e.target.value).toISOString())}
+              disabled={!isEditing}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
             <Textarea 
               id="notes" 
-              value={formData.notes}
+              value={formData.notes || ''}
               onChange={(e) => handleChange('notes', e.target.value)}
-              placeholder="Enter any additional notes"
+              placeholder="Enter notes"
+              disabled={!isEditing}
             />
           </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Lead'}
-            </Button>
-          </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
 };
 
-export default NewLeadForm;
+export default LeadModal; 

@@ -1,5 +1,9 @@
+<<<<<<< Updated upstream
 
 import React, { useState, useEffect } from 'react';
+=======
+import React, { useState } from 'react';
+>>>>>>> Stashed changes
 import KanbanColumn from './KanbanColumn';
 import { useLeadsStore } from '@/store/leadsStore';
 import { Button } from '@/components/ui/button';
@@ -39,7 +43,9 @@ const KanbanBoard = () => {
   
   const handleDrop = (e: React.DragEvent, status: Status) => {
     e.preventDefault();
+    console.log('handleDrop triggered with status:', status);
     if (draggedItemId) {
+      console.log('Moving lead with ID:', draggedItemId, 'to status:', status);
       moveLeadStatus(draggedItemId, status);
       setDraggedItemId(null);
     }

@@ -1,10 +1,15 @@
-
-import KanbanBoard from "@/components/KanbanBoard";
+import { useEffect } from 'react';
+import LeadsTableView from "@/components/LeadsTableView";
+import { initSampleLeads } from '@/store/initLeads';
 
 const Index = () => {
+  useEffect(() => {
+    initSampleLeads();
+  }, []);
+
   return (
-    <div className="h-screen p-4 flex flex-col overflow-hidden">
-      <KanbanBoard />
+    <div className="h-screen w-screen flex flex-col overflow-hidden">
+      <LeadsTableView />
     </div>
   );
 };

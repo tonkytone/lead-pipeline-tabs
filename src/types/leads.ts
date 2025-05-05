@@ -1,4 +1,3 @@
-
 export type Urgency = "hot" | "warm" | "cold";
 
 export type Status =
@@ -12,6 +11,10 @@ export type Status =
   | "Lost";
 
 export type ActionType =
+  | "Send introductory info"
+  | "Make a follow-up phone call"
+  | "Reminder"
+  | "Qualify"
   | "Book appraisal"
   | "Prepare listing kit"
   | "Send listing kit"
@@ -33,7 +36,8 @@ export type ReferrerSource =
   | "Social Media"
   | "Marketing Campaign"
   | "Online Listing"
-  | "Other";
+  | "Other"
+  | "Ailo";
 
 export interface PropertyAddress {
   id: string;

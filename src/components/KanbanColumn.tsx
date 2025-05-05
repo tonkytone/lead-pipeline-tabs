@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import LeadCard from './LeadCard';
@@ -42,7 +41,10 @@ const KanbanColumn = ({
         <CardContent 
           className="flex-1 overflow-y-auto p-2"
           onDragOver={onDragOver}
-          onDrop={(e) => onDrop(e, title)}
+          onDrop={(e) => {
+            console.log('Drop event triggered for column:', title);
+            onDrop(e, title);
+          }}
         >
           {leads.map(lead => (
             <LeadCard 
