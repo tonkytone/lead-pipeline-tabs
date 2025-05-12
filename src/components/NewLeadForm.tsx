@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,7 +65,6 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
   });
 
   const [additionalAddresses, setAdditionalAddresses] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -87,37 +86,21 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
     setAdditionalAddresses(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.propertyAddress) {
-      toast({
-        title: "Missing information",
-        description: "Please provide a lead name and property address.",
-        variant: "destructive"
-      });
-      return;
-    }
+    addLead(formData);
     
-    setIsSubmitting(true);
+    // Add additional addresses if any
+    // We'll handle this after lead creation in the store itself
     
-    try {
-      // Add the primary lead with first property address
-      await addLead(formData);
-      
-      // Reset form
-      resetForm();
-      onClose();
-      
-      toast({
-        title: "Lead created",
-        description: "New lead has been created successfully",
-      });
-    } catch (error) {
-      console.error("Failed to create lead:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
+    toast({
+      title: "Lead created",
+      description: "New lead has been created successfully",
+    });
+    
+    resetForm();
+    onClose();
   };
 
   const resetForm = () => {
@@ -142,31 +125,26 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create New Lead</DialogTitle>
-          <DialogDescription>
-            Enter the details for the new lead. Required fields are marked with an asterisk (*).
-          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Lead Name *</Label>
+            <Label htmlFor="name">Lead Name</Label>
             <Input 
               id="name" 
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
               placeholder="Enter lead name"
-              required
             />
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="propertyAddress">Property Address *</Label>
+            <Label htmlFor="propertyAddress">Property Address</Label>
             <Input 
               id="propertyAddress" 
               value={formData.propertyAddress}
               onChange={(e) => handleChange('propertyAddress', e.target.value)}
               placeholder="Enter property address"
-              required
             />
           </div>
           
@@ -309,12 +287,10 @@ const NewLeadForm = ({ open, onClose }: NewLeadFormProps) => {
           </div>
           
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating...' : 'Create Lead'}
-            </Button>
+            <Button type="submit">Create Lead</Button>
           </DialogFooter>
         </form>
       </DialogContent>

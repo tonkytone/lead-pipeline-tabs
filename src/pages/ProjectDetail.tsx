@@ -77,18 +77,98 @@ const ProjectDetail = () => {
     "Finalise opportunity"
   ];
   const [actionStatuses, setActionStatuses] = useState<Record<ActionType, 'pending' | 'completed' | 'skipped'>>(() => {
-    const nextIdx = actionsOrder.findIndex(a => a === lead!.nextAction);
+    const nextIdx = actionsOrder.findIndex(a => a === lead?.nextAction);
     const init: Record<ActionType, 'pending' | 'completed' | 'skipped'> = {} as any;
     actionsOrder.forEach((action, idx) => {
       init[action] = idx <= nextIdx ? 'completed' : 'pending';
     });
     return init;
   });
+  
+  // Update actionStatuses when lead changes
+  React.useEffect(() => {
+    if (lead) {
+      const nextIdx = actionsOrder.findIndex(a => a === lead.nextAction);
+      const newStatuses: Record<ActionType, 'pending' | 'completed' | 'skipped'> = {} as any;
+      actionsOrder.forEach((action, idx) => {
+        newStatuses[action] = idx <= nextIdx ? 'completed' : 'pending';
+      });
+      setActionStatuses(newStatuses);
+    }
+  }, [lead]);
+  
   const toggleStatus = (action: ActionType) => {
     setActionStatuses(prev => {
       const current = prev[action];
       const next: 'pending' | 'completed' | 'skipped' =
         current === 'pending' ? 'completed' : current === 'completed' ? 'skipped' : 'pending';
+      
+      // Update lead status based on completed actions
+      if (next === 'completed' && formData) {
+        let newStatus: Status = formData.status;
+        
+        // Special handling for Qualify action
+        if (action === 'Qualify') {
+          newStatus = 'Engaged';
+        }
+        
+        // If action is after Qualify, move to Engaged
+        if (action === 'Book appraisal' || action === 'Prepare listing kit' || 
+            action === 'Send listing kit' || action === 'Hold appraisal meeting') {
+          newStatus = 'Engaged';
+        }
+        
+        // If action is after Hold Appraisal Meeting, move to Presented
+        if (action === 'Enter new management details' || action === 'Create management agreement' || 
+            action === 'Send agreement for signing' || action === 'Request Signature') {
+          newStatus = 'Presented';
+        }
+        
+        // If action is after Confirm signing, move to Signed
+        if (action === 'Upload signed agreement' || action === 'Verify property ownership and investor IDs' || 
+            action === 'Finalise opportunity') {
+          newStatus = 'Signed';
+        }
+        
+        // Find the next action in the sequence
+        const currentIndex = actionsOrder.indexOf(action);
+        const nextAction = currentIndex < actionsOrder.length - 1 ? actionsOrder[currentIndex + 1] : undefined;
+        
+        // Update the form data with new status and next action
+        const updatedLead: Lead = {
+          ...formData,
+          status: newStatus,
+          nextAction: nextAction
+        };
+        
+        // Save to store
+        updateLead(formData.id, updatedLead);
+        setFormData(updatedLead);
+        
+        // Show toast notification
+        toast({
+          title: 'Action Updated',
+          description: `Action "${action}" marked as completed. Status updated to ${newStatus}.`
+        });
+      } else if (next === 'skipped' && action === 'Qualify' && formData) {
+        // If Qualify is skipped, move to To Nurture
+        const updatedLead: Lead = {
+          ...formData,
+          status: 'To Nurture',
+          nextAction: undefined
+        };
+        
+        // Save to store
+        updateLead(formData.id, updatedLead);
+        setFormData(updatedLead);
+        
+        // Show toast notification
+        toast({
+          title: 'Action Skipped',
+          description: 'Lead moved to To Nurture status.'
+        });
+      }
+      
       return { ...prev, [action]: next };
     });
   };
@@ -125,19 +205,64 @@ const ProjectDetail = () => {
   
   // Handler to mark the lead as Lost
   const handleMarkLost = () => {
-    if (formData && lostDate) {
-      console.log('Marking lead as lost with ID:', formData.id);
-      const updated: Lead = {
+    if (!formData) {
+      toast({
+        title: 'Error',
+        description: 'No lead data available',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (!lostDate) {
+      toast({
+        title: 'Error',
+        description: 'Please select a date',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      const updatedLead: Lead = {
         ...formData,
         status: 'To Nurture',
         closeDate: new Date(lostDate).toISOString(),
-        notes: `${formData.notes || ''}${formData.notes ? '\n' : ''}Lost reason: ${lostReason}`
+        notes: `${formData.notes || ''}${formData.notes ? '\n' : ''}Lost reason: ${lostReason}`,
+        nextAction: undefined
       };
-      console.log('Updated lead data:', updated);
-      updateLead(formData.id, updated);
-      setFormData(updated);
-      toast({ title: 'Marked as Lost', description: 'Lead moved to To Nurture.' });
+
+      // Update in store
+      updateLead(formData.id, updatedLead);
+      
+      // Update local state
+      setFormData(updatedLead);
+      
+      // Reset form
+      setLostReason('');
+      setLostDate('');
       setShowLostForm(false);
+
+      // Show success message
+      toast({
+        title: 'Lead Updated',
+        description: 'Lead has been moved to To Nurture status.'
+      });
+
+      // Log the update for debugging
+      console.log('Lead marked as lost:', {
+        id: formData.id,
+        oldStatus: formData.status,
+        newStatus: 'To Nurture',
+        updatedLead: updatedLead
+      });
+    } catch (error) {
+      console.error('Error marking lead as lost:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update lead status',
+        variant: 'destructive'
+      });
     }
   };
   
@@ -162,41 +287,51 @@ const ProjectDetail = () => {
     : 'No address';
 
   return (
-    <div className="min-h-screen container py-8 max-w-5xl mx-auto overflow-y-auto bg-white p-6 rounded-lg shadow-md">
+    <div className="min-h-screen container py-4 max-w-5xl mx-auto overflow-y-auto">
       <div className="flex justify-between items-center mb-8">
         <Button 
           variant="ghost" 
-          className="flex items-center text-gray-600 hover:text-primary" 
+          className="flex items-center" 
           onClick={() => navigate('/')}
         >
-          <ChevronLeft className="h-5 w-5 mr-2" />
+          <ChevronLeft className="h-4 w-4 mr-2" />
           Dashboard
         </Button>
         <div className="flex space-x-4">
-          <Button variant="outline" className="border border-gray-300 text-gray-600 hover:bg-gray-100">Edit</Button>
-          <Button variant="outline" className="border border-gray-300 text-gray-600 hover:bg-gray-100">•••</Button>
+          <Button variant="outline">Edit</Button>
+          <Button variant="outline">•••</Button>
         </div>
+      </div>
+      
+      {/* Add header section with name and property address */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold mb-2">{formData?.name}</h1>
+        <p className="text-muted-foreground">
+          {formData?.propertyAddresses && formData.propertyAddresses.length > 0 
+            ? formData.propertyAddresses.map(pa => pa.address).join(', ')
+            : 'No address'}
+        </p>
       </div>
       
       <div className="flex flex-col lg:flex-row gap-6">
         <form onSubmit={handleSave} className="space-y-4 mb-6 flex-1">
           <div>
-            <Label className="text-gray-700">Name</Label>
-            <Input value={formData?.name||''} onChange={e=>handleChange('name', e.target.value)} className="border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent" />
+            <Label>Name</Label>
+            <Input value={formData?.name||''} onChange={e=>handleChange('name', e.target.value)} />
           </div>
           <div>
-            <Label className="text-gray-700">Property Addresses</Label>
+            <Label>Property Addresses</Label>
             {formData?.propertyAddresses.map((pa, idx) => (
               <Input
                 key={pa.id}
-                className="mb-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent"
+                className="mb-2"
                 value={pa.address}
                 onChange={e=>handleAddressChange(idx, e.target.value)}
               />
             ))}
           </div>
-          <Button type="button" variant="outline" className="w-full flex items-center justify-center border border-gray-300 text-gray-600 hover:bg-gray-100" onClick={handleAddPropertyAddress}>
-            <Plus className="h-5 w-5 mr-2" />
+          <Button type="button" variant="outline" className="w-full flex items-center justify-center" onClick={handleAddPropertyAddress}>
+            <Plus className="h-4 w-4 mr-2" />
             Add Another Property Address
           </Button>
           <div className="grid grid-cols-2 gap-2">

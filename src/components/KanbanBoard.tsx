@@ -1,26 +1,15 @@
-<<<<<<< Updated upstream
-
-import React, { useState, useEffect } from 'react';
-=======
 import React, { useState } from 'react';
->>>>>>> Stashed changes
 import KanbanColumn from './KanbanColumn';
 import { useLeadsStore } from '@/store/leadsStore';
 import { Button } from '@/components/ui/button';
-import { Plus, LogOut } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import NewLeadForm from './NewLeadForm';
 import { type Status } from '@/types/leads';
-import { useAuth } from '@/components/auth/AuthProvider';
 
 const KanbanBoard = () => {
-  const { leads, moveLeadStatus, fetchLeads, loading } = useLeadsStore();
-  const { signOut, user } = useAuth();
+  const { leads, moveLeadStatus } = useLeadsStore();
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null);
   const [isNewLeadFormOpen, setIsNewLeadFormOpen] = useState(false);
-  
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
   
   const columns: { status: Status; color: string }[] = [
     { status: 'New', color: 'bg-kanban-new' },
@@ -58,47 +47,28 @@ const KanbanBoard = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center mb-4 px-2">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-semibold">Property Lead Pipeline</h1>
-          {user && (
-            <span className="ml-4 text-sm text-muted-foreground">
-              {user.email}
-            </span>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <Button onClick={() => setIsNewLeadFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create New Lead
-          </Button>
-          <Button variant="outline" onClick={() => signOut()}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
-        </div>
+        <h1 className="text-2xl font-semibold">Property Lead Pipeline</h1>
+        <Button onClick={() => setIsNewLeadFormOpen(true)}>
+          <Plus className="h-4 w-4 mr-2" />
+          Create New Lead
+        </Button>
       </div>
       
-      {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <p className="text-muted-foreground">Loading leads...</p>
+      <div className="flex-1 overflow-x-auto">
+        <div className="flex gap-4 pb-6 h-full">
+          {columns.map(({ status, color }) => (
+            <KanbanColumn 
+              key={status}
+              title={status}
+              leads={getLeadsByStatus(status)}
+              color={color}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            />
+          ))}
         </div>
-      ) : (
-        <div className="flex-1 overflow-x-auto">
-          <div className="flex gap-4 pb-6 h-full">
-            {columns.map(({ status, color }) => (
-              <KanbanColumn 
-                key={status}
-                title={status}
-                leads={getLeadsByStatus(status)}
-                color={color}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
       
       <NewLeadForm 
         open={isNewLeadFormOpen}
